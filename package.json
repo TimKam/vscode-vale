@@ -2,7 +2,7 @@
     "name": "vale",
     "displayName": "vale",
     "description": "Lint documents with Vale",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "homepage": "https://marketplace.visualstudio.com/items?itemName=lunaryorn.vale",
     "bugs": "https://github.com/lunaryorn/vscode-vale/issues",
     "icon": "vale-alt.png",

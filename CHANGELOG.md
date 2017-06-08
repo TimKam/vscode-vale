@@ -7,6 +7,10 @@ Versioning](http://semver.org/)!
 
 ## [Unreleased]
 
+## 0.1.1 – 2017-06-08
+### Fixed
+- Use the right marketplace description
+
 ## 0.1.0 – 2017-06-08
 - Initial release
 
