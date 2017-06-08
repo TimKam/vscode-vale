@@ -7,6 +7,10 @@ Versioning](http://semver.org/)!
 
 ## [Unreleased]
 
+## 0.1.2 – 2017-06-08
+### Changed
+- Use normal logo in Marketplace as it fits better in the overview page
+
 ## 0.1.1 – 2017-06-08
 ### Fixed
 - Use the right marketplace description
