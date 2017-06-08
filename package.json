@@ -1,0 +1,63 @@
+{
+    "name": "vale",
+    "displayName": "vale",
+    "description": "IDE features for fish shell scripts",
+    "version": "0.2.0",
+    "homepage": "https://marketplace.visualstudio.com/items?itemName=lunaryorn.vale",
+    "bugs": "https://github.com/lunaryorn/vscode-vale/issues",
+    "icon": "fish-shell.png",
+    "author": {
+        "name": "Sebastian Wiesner",
+        "email": "swiesner@lunaryorn.com",
+        "url": "http://www.lunaryorn.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/lunaryorn/vscode-vale.git"
+    },
+    "license": "GPL-3.0",
+    "publisher": "lunaryorn",
+    "engines": {
+        "vscode": "^1.12.0"
+    },
+    "galleryBanner": {
+        "color": "#000000",
+        "theme": "dark"
+    },
+    "categories": [
+        "Languages",
+        "Linters"
+    ],
+    "keywords": [
+        "value",
+        "lint",
+        "markdown"
+    ],
+    "badges": [
+        {
+            "url": "https://travis-ci.org/lunaryorn/vscode-vale.svg?branch=master",
+            "href": "https://travis-ci.org/lunaryorn/vscode-vale",
+            "description": "Build Status"
+        }
+    ],
+    "activationEvents": [
+        "onLanguage:markdown"
+    ],
+    "main": "./out/src/extension",
+    "scripts": {
+        "vscode:prepublish": "tsc -p ./",
+        "compile": "tsc -watch -p ./",
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "test": "node ./node_modules/vscode/bin/test"
+    },
+    "devDependencies": {
+        "@types/node": "^7.0.27",
+        "tslint": "^5.2.0",
+        "tslint-language-service": "^0.9.6",
+        "typescript": "^2.0.3",
+        "vscode": "^1.0.0"
+    },
+    "dependencies": {
+        "rxjs": "^5.4.0"
+    }
+}
