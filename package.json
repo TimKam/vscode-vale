@@ -5,7 +5,7 @@
     "version": "0.1.1",
     "homepage": "https://marketplace.visualstudio.com/items?itemName=lunaryorn.vale",
     "bugs": "https://github.com/lunaryorn/vscode-vale/issues",
-    "icon": "vale-alt.png",
+    "icon": "vale.png",
     "author": {
         "name": "Sebastian Wiesner",
         "email": "swiesner@lunaryorn.com",
@@ -21,8 +21,8 @@
         "vscode": "^1.12.0"
     },
     "galleryBanner": {
-        "color": "#ef5350",
-        "theme": "dark"
+        "color": "#fff",
+        "theme": "light"
     },
     "categories": [
         "Languages",
