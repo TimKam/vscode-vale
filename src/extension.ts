@@ -133,8 +133,11 @@ const toDiagnostic = (error: IValeError): Diagnostic => {
     // accordingly
     const range = new Range(error.Line - 1, error.Span[0] - 1,
         error.Line - 1, error.Span[1]);
+    const message = error.Link ?
+        `${error.Message} (${error.Check}, see ${error.Link})` :
+        `${error.Message} (${error.Check})`;
     const diagnostic = new Diagnostic(
-        range, error.Message, toSeverity(error.Severity));
+        range, message, toSeverity(error.Severity));
     diagnostic.source = "vale";
     return diagnostic;
 };
