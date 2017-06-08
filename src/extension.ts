@@ -176,6 +176,8 @@ const startLinting = (context: ExtensionContext): void => {
         .filter((document) => isElligibleDocument(document))
         .map((document) =>
             lintDocument(document)
+                // Clear old diagnotics for the current document
+                .do((_) => diagnostics.delete(document.uri))
                 .catch((error) => {
                     vscode.window.showErrorMessage(error.toString());
                     diagnostics.delete(document.uri);
