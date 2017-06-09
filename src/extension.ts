@@ -49,7 +49,7 @@ const isElligibleDocument = (document: TextDocument): boolean =>
  * @param command The command array
  * @return The standard output of the programms
  */
-const runInWorkspace = (command: string[]): Observable<string> =>
+const runInWorkspace = (command: ReadonlyArray<string>): Observable<string> =>
     Observable.create((observer: Observer<string>): void => {
         const cwd = vscode.workspace.rootPath || process.cwd();
         execFile(command[0], command.slice(1), { cwd },
@@ -104,7 +104,7 @@ interface IValeError {
  * The result of a vale run, mapping file names to a list of errors in the file.
  */
 interface IValeResult {
-    [propName: string]: IValeError[];
+    readonly [propName: string]: ReadonlyArray<IValeError>;
 }
 
 /**
@@ -147,12 +147,13 @@ const toDiagnostic = (error: IValeError): Diagnostic => {
  *
  * @param result The result to convert
  */
-const toDiagnostics = (result: IValeResult): Map<string, Diagnostic[]> => {
-    const diagnostics = new Map<string, Diagnostic[]>();
-    Object.getOwnPropertyNames(result).forEach((fileName) =>
-        diagnostics.set(fileName, result[fileName].map(toDiagnostic)));
-    return diagnostics;
-};
+const toDiagnostics =
+    (result: IValeResult): Map<string, ReadonlyArray<Diagnostic>> => {
+        const diagnostics = new Map<string, ReadonlyArray<Diagnostic>>();
+        Object.getOwnPropertyNames(result).forEach((fileName) =>
+            diagnostics.set(fileName, result[fileName].map(toDiagnostic)));
+        return diagnostics;
+    };
 
 /**
  * Lint a document with vale.
@@ -189,7 +190,8 @@ const startLinting = (context: ExtensionContext): void => {
         .mergeAll()
         .map(toDiagnostics)
         .subscribe((result) => result.forEach((messages, fileName) =>
-            diagnostics.set(Uri.file(fileName), messages)));
+            // tslint:disable-next-line:readonly-array
+            diagnostics.set(Uri.file(fileName), messages as Diagnostic[])));
 
     const closed = observeEvent(vscode.workspace.onDidCloseTextDocument)
         .subscribe((document) => diagnostics.delete(document.uri));
