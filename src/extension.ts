@@ -18,15 +18,17 @@
 import { execFile } from "child_process";
 import { Observable, Observer } from "rxjs";
 
-import * as vscode from "vscode";
 import {
     Diagnostic,
     DiagnosticSeverity,
     Disposable,
     ExtensionContext,
+    languages,
     Range,
     TextDocument,
     Uri,
+    window,
+    workspace,
 } from "vscode";
 
 /**
@@ -38,7 +40,7 @@ import {
  * @return Whether the document is elligible
  */
 const isElligibleDocument = (document: TextDocument): boolean =>
-    !document.isDirty && 0 < vscode.languages.match({
+    !document.isDirty && 0 < languages.match({
         language: "markdown",
         scheme: "file",
     }, document);
@@ -51,7 +53,7 @@ const isElligibleDocument = (document: TextDocument): boolean =>
  */
 const runInWorkspace = (command: ReadonlyArray<string>): Observable<string> =>
     Observable.create((observer: Observer<string>): void => {
-        const cwd = vscode.workspace.rootPath || process.cwd();
+        const cwd = workspace.rootPath || process.cwd();
         execFile(command[0], command.slice(1), { cwd },
             (error, stdout) => {
                 if (error) {
@@ -172,19 +174,19 @@ const lintDocument = (document: TextDocument): Observable<IValeResult> =>
  * @param context The extension context
  */
 const startLinting = (context: ExtensionContext): void => {
-    const diagnostics = vscode.languages.createDiagnosticCollection("vale");
+    const diagnostics = languages.createDiagnosticCollection("vale");
     context.subscriptions.push(diagnostics);
 
-    const linting = Observable.from(vscode.workspace.textDocuments)
-        .merge(observeEvent(vscode.workspace.onDidOpenTextDocument))
-        .merge(observeEvent(vscode.workspace.onDidSaveTextDocument))
+    const linting = Observable.from(workspace.textDocuments)
+        .merge(observeEvent(workspace.onDidOpenTextDocument))
+        .merge(observeEvent(workspace.onDidSaveTextDocument))
         .filter((document) => isElligibleDocument(document))
         .map((document) =>
             lintDocument(document)
                 // Clear old diagnotics for the current document
                 .do((_) => diagnostics.delete(document.uri))
                 .catch((error) => {
-                    vscode.window.showErrorMessage(error.toString());
+                    window.showErrorMessage(error.toString());
                     diagnostics.delete(document.uri);
                     return Observable.empty<IValeResult>();
                 }))
@@ -194,7 +196,7 @@ const startLinting = (context: ExtensionContext): void => {
             // tslint:disable-next-line:readonly-array
             diagnostics.set(Uri.file(fileName), messages as Diagnostic[])));
 
-    const closed = observeEvent(vscode.workspace.onDidCloseTextDocument)
+    const closed = observeEvent(workspace.onDidCloseTextDocument)
         .subscribe((document) => diagnostics.delete(document.uri));
 
     // Register our subscriptions for cleanup by VSCode when the extension gets
