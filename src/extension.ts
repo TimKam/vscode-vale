@@ -139,6 +139,7 @@ const toDiagnostic = (error: IValeError): Diagnostic => {
     const diagnostic = new Diagnostic(
         range, message, toSeverity(error.Severity));
     diagnostic.source = "vale";
+    diagnostic.code = error.Check;
     return diagnostic;
 };
 
