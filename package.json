@@ -39,6 +39,17 @@
             "description": "Build Status"
         }
     ],
+    "contributes": {
+        "commands": {
+            "command": "vale.lintWorkspace",
+            "title": "Lint workspace",
+            "category": "Vale",
+            "icon": {
+                "dark": "vale.png",
+                "light": "vale.png"
+            }
+        }
+    },
     "activationEvents": [
         "onLanguage:markdown"
     ],

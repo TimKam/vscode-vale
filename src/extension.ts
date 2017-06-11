@@ -19,7 +19,9 @@ import { execFile } from "child_process";
 import { Observable, Observer } from "rxjs";
 
 import {
+    commands,
     Diagnostic,
+    DiagnosticCollection,
     DiagnosticSeverity,
     Disposable,
     ExtensionContext,
@@ -54,7 +56,8 @@ const isElligibleDocument = (document: TextDocument): boolean =>
 const runInWorkspace = (command: ReadonlyArray<string>): Observable<string> =>
     Observable.create((observer: Observer<string>): void => {
         const cwd = workspace.rootPath || process.cwd();
-        execFile(command[0], command.slice(1), { cwd },
+        const maxBuffer = 1 * 1024 * 1024; // 1MB buffer for large results
+        execFile(command[0], command.slice(1), { cwd, maxBuffer },
             (error, stdout) => {
                 if (error) {
                     // Throw system errors, but do not fail if the command
@@ -159,50 +162,72 @@ const toDiagnostics =
     };
 
 /**
- * Lint a document with vale.
+ * Lint a path, which is either a file or a directory.
  *
- * @param document The document to check
- * @return The resulting diagnostics
+ * @param path The path to lint
+ * @return An observable with the results of linting the path
  */
-const lintDocument = (document: TextDocument): Observable<IValeResult> =>
-    runInWorkspace(["vale", "--no-exit", "--output", "JSON", document.fileName])
-        .map((stdout) => JSON.parse(stdout));
+const runVale =
+    (args: string | ReadonlyArray<string>): Observable<IValeResult> => {
+        const command: ReadonlyArray<string> = [
+            "vale",
+            "--no-exit",
+            "--output",
+            "JSON",
+            ...(typeof args === "string" ? [args] : args),
+        ];
+        console.info("Run vale as", command);
+        return runInWorkspace(command).map((stdout) => JSON.parse(stdout));
+    };
 
 /**
  * Start linting vale documents.
  *
  * @param context The extension context
  */
-const startLinting = (context: ExtensionContext): void => {
-    const diagnostics = languages.createDiagnosticCollection("vale");
-    context.subscriptions.push(diagnostics);
+const startLinting =
+    (context: ExtensionContext, diagnostics: DiagnosticCollection): void => {
+        const linting = Observable.from(workspace.textDocuments)
+            .merge(observeEvent(workspace.onDidOpenTextDocument))
+            .merge(observeEvent(workspace.onDidSaveTextDocument))
+            .filter((document) => isElligibleDocument(document))
+            .map((document) =>
+                runVale(document.fileName)
+                    // Clear old diagnotics for the current document
+                    .do((_) => diagnostics.delete(document.uri))
+                    .catch((error) => {
+                        window.showErrorMessage(error.toString());
+                        diagnostics.delete(document.uri);
+                        return Observable.empty<IValeResult>();
+                    }))
+            .mergeAll()
+            .map(toDiagnostics)
+            .subscribe((result) => result.forEach((messages, fileName) =>
+                // tslint:disable-next-line:readonly-array
+                diagnostics.set(Uri.file(fileName), messages as Diagnostic[])));
 
-    const linting = Observable.from(workspace.textDocuments)
-        .merge(observeEvent(workspace.onDidOpenTextDocument))
-        .merge(observeEvent(workspace.onDidSaveTextDocument))
-        .filter((document) => isElligibleDocument(document))
-        .map((document) =>
-            lintDocument(document)
-                // Clear old diagnotics for the current document
-                .do((_) => diagnostics.delete(document.uri))
-                .catch((error) => {
-                    window.showErrorMessage(error.toString());
-                    diagnostics.delete(document.uri);
-                    return Observable.empty<IValeResult>();
-                }))
-        .mergeAll()
-        .map(toDiagnostics)
-        .subscribe((result) => result.forEach((messages, fileName) =>
-            // tslint:disable-next-line:readonly-array
-            diagnostics.set(Uri.file(fileName), messages as Diagnostic[])));
+        const closed = observeEvent(workspace.onDidCloseTextDocument)
+            .subscribe((document) => diagnostics.delete(document.uri));
 
-    const closed = observeEvent(workspace.onDidCloseTextDocument)
-        .subscribe((document) => diagnostics.delete(document.uri));
+        // Register our subscriptions for cleanup by VSCode when the extension
+        // gets deactivated
+        [linting, closed].forEach((subscription) =>
+            context.subscriptions.push({ dispose: subscription.unsubscribe }));
+    };
 
-    // Register our subscriptions for cleanup by VSCode when the extension gets
-    // deactivated
-    [linting, closed].forEach((subscription) =>
-        context.subscriptions.push({ dispose: subscription.unsubscribe }));
+/**
+ * Run value on the entire workspace.
+ *
+ * @return An observable with the results
+ */
+const runValeOnWorkspace = (): Observable<IValeResult> => {
+    // Explicitly find all elligible files outselves so that we respect
+    // "files.exclude", ie, only look at files that are included in the
+    // workspace.
+    const extensions: ReadonlyArray<string> = ["md", "markdown"];
+    const pattern = `**/*.{${extensions.join(",")}}`;
+    return Observable.fromPromise(workspace.findFiles(pattern))
+        .concatMap((uris) => runVale(uris.map((uri) => uri.fsPath)));
 };
 
 /**
@@ -236,5 +261,21 @@ const getValeVersion = (): Observable<string> =>
 export const activate = (context: ExtensionContext): Promise<any> =>
     getValeVersion().do((version) => {
         console.log("Found vale version", version);
-        startLinting(context);
+        const diagnostics = languages.createDiagnosticCollection("vale");
+        context.subscriptions.push(diagnostics);
+
+        startLinting(context, diagnostics);
+
+        context.subscriptions.push(commands.registerCommand(
+            "vale.lintWorkspace",
+            () => runValeOnWorkspace()
+                .map(toDiagnostics)
+                .do((result) => {
+                    diagnostics.clear();
+                    result.forEach((errors, fileName) =>
+                        diagnostics.set(Uri.file(fileName),
+                            // tslint:disable-next-line:readonly-array
+                            errors as Diagnostic[]));
+                })
+                .toPromise()));
     }).toPromise();

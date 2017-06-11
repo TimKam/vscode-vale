@@ -11,21 +11,20 @@ Lint documents with [Vale][] in [Visual Studio Code][code].
 
 [Install value][1] and make sure that `vale` is in `$PATH`.
 
-If your setup does not let you to add `vale` to `$PATH`, please [open an
-issue][issue].
+If your setup does not let you to add `vale` to `$PATH`, please [open an issue][issue].
 
 [1]: https://valelint.github.io/docs/#installation
 [issue]: https://github.com/lunaryorn/vscode-value/issues/new
 
 ## Usage
 
-### On the fly linting
+Vale automatically checks a document when you open or save it.  Use the `Vale: Lint workspace` command to check the entire workspace.
 
-This extension runs vale when you open or save a document.
+Vale always runs from the workspace directory in either case, so if you put a [Vale configuration][config] in the workspace directory it will automatically pick it up.
 
-This feature is currently **limited to Markdown**; please [open an issue][issue]
-or a pull request if you need support for **more document formats**, provided
-that [Vale][] supports them.
+Currently this extension only supports **Markdown documents**; please [open an issue][issue] or a pull request if you need support for **more document formats**, provided that [Vale][] supports them.
+
+[config]: https://valelint.github.io/docs/config/
 
 ## License
 

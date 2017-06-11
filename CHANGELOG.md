@@ -6,6 +6,9 @@ to structure this file.  This project does **not** adhere to [Semantic
 Versioning](http://semver.org/)!
 
 ## [Unreleased]
+### Added
+- Add `Vale: Lint workspace` command to run vale on all files in the current
+  workspace [GH-1]
 
 ## 0.1.2 – 2017-06-08
 ### Changed
