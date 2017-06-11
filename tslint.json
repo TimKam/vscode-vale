@@ -14,6 +14,7 @@
         "no-this": true,
         "no-class": true,
         "no-mixed-interface": true,
+        "only-arrow-functions": true,
         // Style rules
         "max-line-length": [
             true,
