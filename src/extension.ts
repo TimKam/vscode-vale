@@ -27,6 +27,7 @@ import {
     Disposable,
     ExtensionContext,
     languages,
+    ProgressLocation,
     Range,
     TextDocument,
     Uri,
@@ -239,18 +240,24 @@ const runValeOnWorkspace = (): Observable<IValeResult> => {
  */
 const registerCommands =
     (context: ExtensionContext, diagnostics: DiagnosticCollection): void => {
+        const lintProgressOptions = {
+            location: ProgressLocation.Window,
+            title: "vale running on workspace",
+        };
         const lintWorkspaceCommand = commands.registerCommand(
             "vale.lintWorkspace",
-            () => runValeOnWorkspace()
-                .map(toDiagnostics)
-                .do((result) => {
-                    diagnostics.clear();
-                    result.forEach((errors, fileName) =>
-                        diagnostics.set(Uri.file(fileName),
-                            // tslint:disable-next-line:readonly-array
-                            errors as Diagnostic[]));
-                })
-                .toPromise());
+            () => window.withProgress(
+                lintProgressOptions,
+                () => runValeOnWorkspace()
+                    .map(toDiagnostics)
+                    .do((result) => {
+                        diagnostics.clear();
+                        result.forEach((errors, fileName) =>
+                            diagnostics.set(Uri.file(fileName),
+                                // tslint:disable-next-line:readonly-array
+                                errors as Diagnostic[]));
+                    })
+                    .toPromise()));
 
         context.subscriptions.push(lintWorkspaceCommand);
     };
