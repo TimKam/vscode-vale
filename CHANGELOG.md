@@ -8,7 +8,7 @@ Versioning](http://semver.org/)!
 ## [Unreleased]
 ### Added
 - Add `Vale: Lint workspace` command to run vale on all files in the current
-  workspace [GH-1].
+  workspace, see <https://github.com/lunaryorn/vscode-vale/issues/1>.
 
 ### Changed
 - Require Vale version 0.7.2 or newer.  Older vale releases do not lint all
