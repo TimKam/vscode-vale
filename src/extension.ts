@@ -231,6 +231,30 @@ const runValeOnWorkspace = (): Observable<IValeResult> => {
 };
 
 /**
+ * Register commands for this extensions.
+ *
+ * @param context The extension context
+ * @param diagnostics The diagnostic collection to put diagnostics in
+ */
+const registerCommands =
+    (context: ExtensionContext, diagnostics: DiagnosticCollection): void => {
+        const lintWorkspaceCommand = commands.registerCommand(
+            "vale.lintWorkspace",
+            () => runValeOnWorkspace()
+                .map(toDiagnostics)
+                .do((result) => {
+                    diagnostics.clear();
+                    result.forEach((errors, fileName) =>
+                        diagnostics.set(Uri.file(fileName),
+                            // tslint:disable-next-line:readonly-array
+                            errors as Diagnostic[]));
+                })
+                .toPromise());
+
+        context.subscriptions.push(lintWorkspaceCommand);
+    };
+
+/**
  * Get the version of vale.
  *
  * @return An observable with the vale version string as single element
@@ -265,17 +289,5 @@ export const activate = (context: ExtensionContext): Promise<any> =>
         context.subscriptions.push(diagnostics);
 
         startLinting(context, diagnostics);
-
-        context.subscriptions.push(commands.registerCommand(
-            "vale.lintWorkspace",
-            () => runValeOnWorkspace()
-                .map(toDiagnostics)
-                .do((result) => {
-                    diagnostics.clear();
-                    result.forEach((errors, fileName) =>
-                        diagnostics.set(Uri.file(fileName),
-                            // tslint:disable-next-line:readonly-array
-                            errors as Diagnostic[]));
-                })
-                .toPromise()));
+        registerCommands(context, diagnostics);
     }).toPromise();
