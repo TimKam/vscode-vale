@@ -5,9 +5,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how
 to structure this file.  This project does **not** adhere to [Semantic
 Versioning](http://semver.org/)!
 
-## [Unreleased]s
+## [Unreleased]
 
-### 0.2.0 – 2017-06-12
+## 0.2.0 – 2017-06-12
 ### Added
 - Add `Vale: Lint workspace` command to run vale on all files in the current
   workspace, see <https://github.com/lunaryorn/vscode-vale/issues/1>.
