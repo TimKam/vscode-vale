@@ -10,6 +10,10 @@ Versioning](http://semver.org/)!
 - Add `Vale: Lint workspace` command to run vale on all files in the current
   workspace [GH-1]
 
+### Changed
+- Require Vale version 0.7.2 or newer.  Older vale releases do not lint all
+  files given as arguments, see <https://github.com/ValeLint/vale/issues/46>
+
 ## 0.1.2 – 2017-06-08
 ### Changed
 - Use normal logo in Marketplace as it fits better in the overview page

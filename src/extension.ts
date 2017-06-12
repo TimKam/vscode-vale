@@ -17,6 +17,7 @@
 
 import { execFile } from "child_process";
 import { Observable, Observer } from "rxjs";
+import * as semver from "semver";
 
 import {
     commands,
@@ -273,21 +274,44 @@ const getValeVersion = (): Observable<string> =>
         });
 
 /**
+ * The version requirements for vale.
+ *
+ * We need at least 0.7.2 in this extension because earlier releases do not
+ * process all command line arguments, which we need to lint the entire
+ * workspace.
+ *
+ * See https://github.com/ValeLint/vale/issues/46 for details.
+ */
+const VERSION_REQUIREMENTS = ">= 0.7.2";
+
+/**
  * Activate this extension.
  *
  * Start linting elligible files with vale.
  *
- * Initialization fails if vale is not installed.
+ * Initialization fails if vale is not installed or does not meet the version
+ * requirements.
  *
  * @param context The context for this extension
  * @return A promise for the initialization
  */
 export const activate = (context: ExtensionContext): Promise<any> =>
-    getValeVersion().do((version) => {
-        console.log("Found vale version", version);
-        const diagnostics = languages.createDiagnosticCollection("vale");
-        context.subscriptions.push(diagnostics);
+    getValeVersion()
+        .do((version) => {
+            if (semver.satisfies(version, VERSION_REQUIREMENTS)) {
+                console.log("Found vale version", version,
+                    "satisfying", VERSION_REQUIREMENTS);
+            } else {
+                // tslint:disable-next-line:max-line-length
+                throw new Error(`Vale version ${version} does not satisfy ${VERSION_REQUIREMENTS}`);
+            }
+        })
+        .do(() => {
+            // Create and register a collection for our diagnostics
+            const diagnostics = languages.createDiagnosticCollection("vale");
+            context.subscriptions.push(diagnostics);
 
-        startLinting(context, diagnostics);
-        registerCommands(context, diagnostics);
-    }).toPromise();
+            startLinting(context, diagnostics);
+            registerCommands(context, diagnostics);
+        })
+        .toPromise();
