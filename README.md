@@ -9,7 +9,7 @@ Lint documents with [Vale][] in [Visual Studio Code][code].
 
 ## Prerequisites
 
-[Install value][1] and make sure that `vale` is in `$PATH`.
+[Install vale][1] and make sure that `vale` is in `$PATH`.
 
 If your setup does not let you to add `vale` to `$PATH`, please [open an issue][issue].
 
