@@ -6,6 +6,8 @@ to structure this file.  This project does **not** adhere to [Semantic
 Versioning](http://semver.org/)!
 
 ## [Unreleased]
+
+## 0.3.0 – 2017-06-13
 ### Added
 - Show status bar message while linting the entire workspace with vale, see
   <https://github.com/lunaryorn/vscode-vale/issues/2>.
