@@ -70,7 +70,6 @@
         "vscode": "^1.0.0"
     },
     "dependencies": {
-        "rxjs": "^5.4.0",
         "semver": "^5.3.0"
     }
 }

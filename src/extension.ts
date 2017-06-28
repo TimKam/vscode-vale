@@ -19,15 +19,12 @@
 // SOFTWARE.
 
 import { execFile } from "child_process";
-import { Observable, Observer } from "rxjs";
 import * as semver from "semver";
-
 import {
     commands,
     Diagnostic,
     DiagnosticCollection,
     DiagnosticSeverity,
-    Disposable,
     ExtensionContext,
     languages,
     ProgressLocation,
@@ -53,13 +50,13 @@ const isElligibleDocument = (document: TextDocument): boolean =>
     }, document);
 
 /**
- * Run a command in the current workspace.
+ * Run a command in the current workspace and get its standard output.
  *
  * @param command The command array
- * @return The standard output of the programms
+ * @return The standard output of the program
  */
-const runInWorkspace = (command: ReadonlyArray<string>): Observable<string> =>
-    Observable.create((observer: Observer<string>): void => {
+const runInWorkspace = (command: ReadonlyArray<string>): Promise<string> =>
+    new Promise((resolve, reject) => {
         const cwd = workspace.rootPath || process.cwd();
         const maxBuffer = 1 * 1024 * 1024; // 1MB buffer for large results
         execFile(command[0], command.slice(1), { cwd, maxBuffer },
@@ -68,31 +65,12 @@ const runInWorkspace = (command: ReadonlyArray<string>): Observable<string> =>
                     // Throw system errors, but do not fail if the command
                     // fails with a non-zero exit code.
                     console.error("Command error", command, error);
-                    observer.error(error);
+                    reject(error);
                 } else {
-                    observer.next(stdout);
-                    observer.complete();
+                    resolve(stdout);
                 }
             });
     });
-
-/**
- * An event that can be subscribed to.
- */
-type Event<T> = (handler: (document: T) => void) => Disposable;
-
-/**
- * Observe a vscode event.
- *
- * @param event The event to observe
- * @return An observable which pushes every event
- */
-const observeEvent = <T>(event: Event<T>): Observable<T> =>
-    Observable.fromEventPattern(
-        (handler) => event((d) => handler(d)),
-        (_: any, subscription: Disposable) => subscription.dispose(),
-        (d) => d as T,
-    );
 
 /**
  * A severity from vale.
@@ -170,10 +148,10 @@ const toDiagnostics =
  * Lint a path, which is either a file or a directory.
  *
  * @param path The path to lint
- * @return An observable with the results of linting the path
+ * @return A promise with the results of linting the path
  */
 const runVale =
-    (args: string | ReadonlyArray<string>): Observable<IValeResult> => {
+    (args: string | ReadonlyArray<string>): Promise<IValeResult> => {
         const command: ReadonlyArray<string> = [
             "vale",
             "--no-exit",
@@ -182,7 +160,7 @@ const runVale =
             ...(typeof args === "string" ? [args] : args),
         ];
         console.info("Run vale as", command);
-        return runInWorkspace(command).map((stdout) => JSON.parse(stdout));
+        return runInWorkspace(command).then((stdout) => JSON.parse(stdout));
     };
 
 /**
@@ -192,47 +170,50 @@ const runVale =
  */
 const startLinting =
     (context: ExtensionContext, diagnostics: DiagnosticCollection): void => {
-        const linting = Observable.from(workspace.textDocuments)
-            .merge(observeEvent(workspace.onDidOpenTextDocument))
-            .merge(observeEvent(workspace.onDidSaveTextDocument))
-            .filter((document) => isElligibleDocument(document))
-            .map((document) =>
+        const lint = (document: TextDocument) => {
+            if (isElligibleDocument(document)) {
                 runVale(document.fileName)
-                    // Clear old diagnotics for the current document
-                    .do((_) => diagnostics.delete(document.uri))
-                    .catch((error) => {
+                    .catch((error): IValeResult => {
                         window.showErrorMessage(error.toString());
                         diagnostics.delete(document.uri);
-                        return Observable.empty<IValeResult>();
-                    }))
-            .mergeAll()
-            .map(toDiagnostics)
-            .subscribe((result) => result.forEach((messages, fileName) =>
-                // tslint:disable-next-line:readonly-array
-                diagnostics.set(Uri.file(fileName), messages as Diagnostic[])));
+                        return {};
+                    })
+                    .then((result) => {
+                        // Delete old diagnostics for the document, in case we
+                        // don't receive new diagnostics, because the document
+                        // has no errors.
+                        diagnostics.delete(document.uri);
+                        toDiagnostics(result).forEach((messages, fileName) =>
+                            diagnostics.set(Uri.file(fileName),
+                                // tslint:disable-next-line:readonly-array
+                                messages as Diagnostic[]));
+                    });
+            } else {
+                Promise.resolve();
+            }
+        };
 
-        const closed = observeEvent(workspace.onDidCloseTextDocument)
-            .subscribe((document) => diagnostics.delete(document.uri));
+        workspace.onDidOpenTextDocument(lint, null, context.subscriptions);
+        workspace.onDidSaveTextDocument(lint, null, context.subscriptions);
+        workspace.textDocuments.forEach(lint);
 
-        // Register our subscriptions for cleanup by VSCode when the extension
-        // gets deactivated
-        [linting, closed].forEach((subscription) =>
-            context.subscriptions.push({ dispose: subscription.unsubscribe }));
+        workspace.onDidCloseTextDocument(
+            (d) => diagnostics.delete(d.uri), null, context.subscriptions);
     };
 
 /**
  * Run value on the entire workspace.
  *
- * @return An observable with the results
+ * @return A promise with the results
  */
-const runValeOnWorkspace = (): Observable<IValeResult> => {
+const runValeOnWorkspace = async (): Promise<IValeResult> => {
     // Explicitly find all elligible files outselves so that we respect
     // "files.exclude", ie, only look at files that are included in the
     // workspace.
     const extensions: ReadonlyArray<string> = ["md", "markdown"];
     const pattern = `**/*.{${extensions.join(",")}}`;
-    return Observable.fromPromise(workspace.findFiles(pattern))
-        .concatMap((uris) => runVale(uris.map((uri) => uri.fsPath)));
+    const uris = await workspace.findFiles(pattern);
+    return runVale(uris.map((u) => u.fsPath));
 };
 
 /**
@@ -252,15 +233,14 @@ const registerCommands =
             () => window.withProgress(
                 lintProgressOptions,
                 () => runValeOnWorkspace()
-                    .map(toDiagnostics)
-                    .do((result) => {
+                    .then(toDiagnostics)
+                    .then((result) => {
                         diagnostics.clear();
                         result.forEach((errors, fileName) =>
                             diagnostics.set(Uri.file(fileName),
                                 // tslint:disable-next-line:readonly-array
                                 errors as Diagnostic[]));
-                    })
-                    .toPromise()));
+                    })));
 
         context.subscriptions.push(lintWorkspaceCommand);
     };
@@ -268,12 +248,12 @@ const registerCommands =
 /**
  * Get the version of vale.
  *
- * @return An observable with the vale version string as single element
- * @throws An error if vale doesn't exist or if the version wasn't found
+ * @return A promise with the vale version string as single element.  If vale
+ * doesn't exist or if the version wasn't found the promise is rejected.
  */
-const getValeVersion = (): Observable<string> =>
+const getValeVersion = (): Promise<string> =>
     runInWorkspace(["vale", "--version"])
-        .map((stdout) => {
+        .then((stdout) => {
             const matches = stdout.match(/^vale version (.+)$/m);
             if (matches && matches.length === 2) {
                 return matches[1];
@@ -305,23 +285,19 @@ const VERSION_REQUIREMENTS = ">= 0.7.2";
  * @param context The context for this extension
  * @return A promise for the initialization
  */
-export const activate = (context: ExtensionContext): Promise<any> =>
-    getValeVersion()
-        .do((version) => {
-            if (semver.satisfies(version, VERSION_REQUIREMENTS)) {
-                console.log("Found vale version", version,
-                    "satisfying", VERSION_REQUIREMENTS);
-            } else {
-                // tslint:disable-next-line:max-line-length
-                throw new Error(`Vale version ${version} does not satisfy ${VERSION_REQUIREMENTS}`);
-            }
-        })
-        .do(() => {
-            // Create and register a collection for our diagnostics
-            const diagnostics = languages.createDiagnosticCollection("vale");
-            context.subscriptions.push(diagnostics);
+export const activate = async (context: ExtensionContext): Promise<any> => {
+    const version = await getValeVersion();
+    if (semver.satisfies(version, VERSION_REQUIREMENTS)) {
+        console.log("Found vale version", version,
+            "satisfying", VERSION_REQUIREMENTS);
+    } else {
+        // tslint:disable-next-line:max-line-length
+        throw new Error(`Vale version ${version} does not satisfy ${VERSION_REQUIREMENTS}`);
+    }
+    // Create and register a collection for our diagnostics
+    const diagnostics = languages.createDiagnosticCollection("vale");
+    context.subscriptions.push(diagnostics);
 
-            startLinting(context, diagnostics);
-            registerCommands(context, diagnostics);
-        })
-        .toPromise();
+    startLinting(context, diagnostics);
+    registerCommands(context, diagnostics);
+};
