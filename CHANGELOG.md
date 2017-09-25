@@ -6,6 +6,8 @@ to structure this file.  This project does **not** adhere to [Semantic
 Versioning](http://semver.org/)!
 
 ## [Unreleased]
+### Changed
+- Require vscode 1.15 or newer
 
 ## 0.3.1 – 2017-06-26
 ### Changed
