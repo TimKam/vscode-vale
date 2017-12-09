@@ -9,6 +9,8 @@ Versioning](http://semver.org/)!
 ### Added
 - Support multi-root workspaces, see
   <https://github.com/lunaryorn/vscode-vale/issues/4>
+- Increase buffer size for `vale` processes to handle large results
+  <https://github.com/lunaryorn/vscode-vale/issues/3>
 
 ### Changed
 - Require vscode 1.15 or newer

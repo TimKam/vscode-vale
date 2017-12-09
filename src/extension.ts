@@ -65,7 +65,7 @@ const runInWorkspace = (
 ): Promise<string> =>
     new Promise((resolve, reject) => {
         const cwd = folder ? folder.uri.fsPath : process.cwd();
-        const maxBuffer = 1 * 1024 * 1024; // 10MB buffer for large results
+        const maxBuffer = 10 * 1024 * 1024; // 10MB buffer for large results
         execFile(command[0], command.slice(1), { cwd, maxBuffer },
             (error, stdout) => {
                 if (error) {
