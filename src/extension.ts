@@ -33,6 +33,7 @@ import {
     Uri,
     window,
     workspace,
+    WorkspaceFolder,
 } from "vscode";
 
 /**
@@ -50,15 +51,21 @@ const isElligibleDocument = (document: TextDocument): boolean =>
     }, document);
 
 /**
- * Run a command in the current workspace and get its standard output.
+ * Run a command in a given workspace folder and get its standard output.
  *
+ * If the workspace folder is undefined run the command in the working directory
+ * of the current vscode instance.
+ *
+ * @param folder The workspace
  * @param command The command array
  * @return The standard output of the program
  */
-const runInWorkspace = (command: ReadonlyArray<string>): Promise<string> =>
+const runInWorkspace = (
+    folder: WorkspaceFolder | undefined, command: ReadonlyArray<string>,
+): Promise<string> =>
     new Promise((resolve, reject) => {
-        const cwd = workspace.rootPath || process.cwd();
-        const maxBuffer = 1 * 1024 * 1024; // 1MB buffer for large results
+        const cwd = folder ? folder.uri.fsPath : process.cwd();
+        const maxBuffer = 1 * 1024 * 1024; // 10MB buffer for large results
         execFile(command[0], command.slice(1), { cwd, maxBuffer },
             (error, stdout) => {
                 if (error) {
@@ -77,7 +84,7 @@ const runInWorkspace = (command: ReadonlyArray<string>): Promise<string> =>
  */
 type ValeSeverity = "suggestion" | "warning" | "error";
 
-interface IValeError {
+interface IValeErrorJSON {
     readonly Check: string;
     readonly Context: string;
     readonly Description: string;
@@ -89,11 +96,16 @@ interface IValeError {
 }
 
 /**
+ * The type of Vale’s JSON output.
+ */
+interface IValeJSON {
+    readonly [propName: string]: ReadonlyArray<IValeErrorJSON>;
+}
+
+/**
  * The result of a vale run, mapping file names to a list of errors in the file.
  */
-interface IValeResult {
-    readonly [propName: string]: ReadonlyArray<IValeError>;
-}
+type ValeDiagnostics = Map<string, ReadonlyArray<Diagnostic>>;
 
 /**
  * Convert a Vale severity string to a code diagnostic severity.
@@ -116,7 +128,7 @@ const toSeverity = (severity: ValeSeverity): DiagnosticSeverity => {
  *
  * @param message The message to convert
  */
-const toDiagnostic = (error: IValeError): Diagnostic => {
+const toDiagnostic = (error: IValeErrorJSON): Diagnostic => {
     // vale prints one-based locations but code wants zero-based, so adjust
     // accordingly
     const range = new Range(error.Line - 1, error.Span[0] - 1,
@@ -132,35 +144,62 @@ const toDiagnostic = (error: IValeError): Diagnostic => {
 };
 
 /**
- * Convert a vale result to a list of diagnostics.
- *
- * @param result The result to convert
- */
-const toDiagnostics =
-    (result: IValeResult): Map<string, ReadonlyArray<Diagnostic>> => {
-        const diagnostics = new Map<string, ReadonlyArray<Diagnostic>>();
-        Object.getOwnPropertyNames(result).forEach((fileName) =>
-            diagnostics.set(fileName, result[fileName].map(toDiagnostic)));
-        return diagnostics;
-    };
-
-/**
  * Lint a path, which is either a file or a directory.
  *
  * @param path The path to lint
  * @return A promise with the results of linting the path
  */
-const runVale =
-    (args: string | ReadonlyArray<string>): Promise<IValeResult> => {
-        const command: ReadonlyArray<string> = [
-            "vale",
-            "--no-exit",
-            "--output",
-            "JSON",
-            ...(typeof args === "string" ? [args] : args),
-        ];
-        console.info("Run vale as", command);
-        return runInWorkspace(command).then((stdout) => JSON.parse(stdout));
+const runVale = (
+    folder: WorkspaceFolder | undefined,
+    args: string | ReadonlyArray<string>,
+): Promise<ValeDiagnostics> => {
+    const command: ReadonlyArray<string> = [
+        "vale",
+        "--no-exit",
+        "--output",
+        "JSON",
+        ...(typeof args === "string" ? [args] : args),
+    ];
+    console.info("Run vale as", command);
+    return runInWorkspace(folder, command).then((stdout) => {
+        const result = JSON.parse(stdout) as IValeJSON;
+        const diagnostics: ValeDiagnostics = new Map();
+        for (const fileName of Object.getOwnPropertyNames(result)) {
+            diagnostics.set(fileName, result[fileName].map(toDiagnostic));
+        }
+        return diagnostics;
+    });
+};
+
+/**
+ * Lint a single document and put the results into a diagnostic collection.
+ *
+ * @param diagnostics The diagnostic collection to put results in
+ * @param document The document to lint
+ */
+const lintDocumentToDiagnostics = (diagnostics: DiagnosticCollection) =>
+    (document: TextDocument) => {
+        console.log("Linting", document.fileName);
+        if (!isElligibleDocument(document)) {
+            return Promise.resolve();
+        }
+        const folder = workspace.getWorkspaceFolder(document.uri);
+        return runVale(folder, document.fileName)
+            .catch((error): ValeDiagnostics => {
+                window.showErrorMessage(error.toString());
+                diagnostics.delete(document.uri);
+                return new Map();
+            })
+            .then((result) => {
+                // Delete old diagnostics for the document, in case we
+                // don't receive new diagnostics, because the document
+                // has no errors.
+                diagnostics.delete(document.uri);
+                result.forEach((fileDiagnostics, fileName) =>
+                    diagnostics.set(Uri.file(fileName),
+                        // tslint:disable-next-line:readonly-array
+                        fileDiagnostics as Diagnostic[]));
+            });
     };
 
 /**
@@ -170,50 +209,74 @@ const runVale =
  */
 const startLinting =
     (context: ExtensionContext, diagnostics: DiagnosticCollection): void => {
-        const lint = (document: TextDocument) => {
-            if (isElligibleDocument(document)) {
-                runVale(document.fileName)
-                    .catch((error): IValeResult => {
-                        window.showErrorMessage(error.toString());
-                        diagnostics.delete(document.uri);
-                        return {};
-                    })
-                    .then((result) => {
-                        // Delete old diagnostics for the document, in case we
-                        // don't receive new diagnostics, because the document
-                        // has no errors.
-                        diagnostics.delete(document.uri);
-                        toDiagnostics(result).forEach((messages, fileName) =>
-                            diagnostics.set(Uri.file(fileName),
-                                // tslint:disable-next-line:readonly-array
-                                messages as Diagnostic[]));
-                    });
-            } else {
-                Promise.resolve();
-            }
-        };
-
-        workspace.onDidOpenTextDocument(lint, null, context.subscriptions);
-        workspace.onDidSaveTextDocument(lint, null, context.subscriptions);
-        workspace.textDocuments.forEach(lint);
+        workspace.onDidSaveTextDocument(lintDocumentToDiagnostics(diagnostics),
+            null, context.subscriptions);
+        workspace.onDidOpenTextDocument(lintDocumentToDiagnostics(diagnostics),
+            null, context.subscriptions);
+        workspace.textDocuments.forEach(lintDocumentToDiagnostics(diagnostics));
 
         workspace.onDidCloseTextDocument(
             (d) => diagnostics.delete(d.uri), null, context.subscriptions);
     };
 
 /**
+ * A workspace folder with URIs.
+ */
+interface IWorkspaceFolderFiles {
+    readonly folder: WorkspaceFolder;
+    readonly filePaths: ReadonlyArray<string>;
+}
+
+/**
+ * Group a list of URIs by their workspace folders.
+ *
+ * Yield an object containing the folder and the corresponding file paths for
+ * every group.
+ *
+ * @param uris The URIs to group by their workspace folder.
+ */
+function* groupByWorkspace(
+    uris: ReadonlyArray<Uri>,
+): IterableIterator<IWorkspaceFolderFiles> {
+    const byFolder = new Map<number, ReadonlyArray<string>>();
+    for (const uri of uris) {
+        const folder = workspace.getWorkspaceFolder(uri);
+        if (folder) {
+            const paths = byFolder.get(folder.index) || [];
+            byFolder.set(folder.index, [...paths, uri.fsPath]);
+        }
+    }
+
+    const folders = workspace.workspaceFolders;
+    if (folders) {
+        for (const [index, folderUris] of byFolder) {
+            const folder = folders[index];
+            yield { folder, filePaths: folderUris };
+        }
+    }
+}
+
+/**
  * Run value on the entire workspace.
  *
  * @return A promise with the results
  */
-const runValeOnWorkspace = async (): Promise<IValeResult> => {
-    // Explicitly find all elligible files outselves so that we respect
+const runValeOnWorkspace = async (): Promise<ValeDiagnostics> => {
+    // Explicitly find all elligible files ourselves so that we respect
     // "files.exclude", ie, only look at files that are included in the
     // workspace.
     const extensions: ReadonlyArray<string> = ["md", "markdown"];
     const pattern = `**/*.{${extensions.join(",")}}`;
     const uris = await workspace.findFiles(pattern);
-    return runVale(uris.map((u) => u.fsPath));
+    const results: ValeDiagnostics = new Map();
+    for (const urisInFolder of groupByWorkspace(uris)) {
+        const folderResults = await runVale(
+            urisInFolder.folder, urisInFolder.filePaths);
+        for (const [path, errors] of folderResults) {
+            results.set(path, errors);
+        }
+    }
+    return results;
 };
 
 /**
@@ -233,7 +296,6 @@ const registerCommands =
             () => window.withProgress(
                 lintProgressOptions,
                 () => runValeOnWorkspace()
-                    .then(toDiagnostics)
                     .then((result) => {
                         diagnostics.clear();
                         result.forEach((errors, fileName) =>
@@ -252,7 +314,9 @@ const registerCommands =
  * doesn't exist or if the version wasn't found the promise is rejected.
  */
 const getValeVersion = (): Promise<string> =>
-    runInWorkspace(["vale", "--version"])
+    // Run in an arbitrary directory, since "--version" doesn't depend on any
+    // folder
+    runInWorkspace(undefined, ["vale", "--version"])
         .then((stdout) => {
             const matches = stdout.match(/^vale version (.+)$/m);
             if (matches && matches.length === 2) {

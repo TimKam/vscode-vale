@@ -30,7 +30,8 @@
     "keywords": [
         "value",
         "lint",
-        "markdown"
+        "markdown",
+        "multi-root ready"
     ],
     "badges": [
         {
