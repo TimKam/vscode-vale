@@ -8,6 +8,3 @@ script:
   - yarn vscode:prepublish
 cache:
   yarn: true
-# Don't send mails, I'm using ccmenu
-notifications:
-  email: false
