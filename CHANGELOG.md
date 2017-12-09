@@ -6,6 +6,8 @@ to structure this file.  This project does **not** adhere to [Semantic
 Versioning](http://semver.org/)!
 
 ## [Unreleased]
+
+## 0.4.0 – 2017-12-09
 ### Added
 - Support multi-root workspaces, see
   <https://github.com/lunaryorn/vscode-vale/issues/4>
