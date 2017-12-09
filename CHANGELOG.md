@@ -13,7 +13,7 @@ Versioning](http://semver.org/)!
   <https://github.com/lunaryorn/vscode-vale/issues/4>
 
 ### Changed
-- Increase buffer size for `vale` processes to handle large results
+- Increase buffer size for `vale` processes to handle large results, see
   <https://github.com/lunaryorn/vscode-vale/issues/3>
 
 ### Changed
