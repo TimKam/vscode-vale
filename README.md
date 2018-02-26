@@ -16,7 +16,7 @@ If your setup does not let you to add `vale` to `$PATH`, please [open an issue][
 If vale is too old the extension fails to activate.  In this case please update Vale; the error message will tell you the required version.
 
 [1]: https://valelint.github.io/docs/#installation
-[issue]: https://github.com/lunaryorn/vscode-value/issues/new
+[issue]: https://github.com/lunaryorn/vscode-vale/issues/new
 
 ## Usage
 
