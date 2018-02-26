@@ -45,7 +45,7 @@ import {
  * @return Whether the document is elligible
  */
 const isElligibleDocument = (document: TextDocument): boolean =>
-    !document.isDirty && 0 < languages.match({ 
+    !document.isDirty && 0 < languages.match({
         scheme: "file",
     }, document);
 
