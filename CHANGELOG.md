@@ -2,7 +2,7 @@
 All notable changes to the "vale" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how
-to structure this file.  This project does **not** adhere to [Semantic
+to structure this file.  This project adheres to [Semantic
 Versioning](http://semver.org/)!
 
 ## [Unreleased]
