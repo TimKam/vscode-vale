@@ -6,6 +6,8 @@ to structure this file.  This project adheres to [Semantic
 Versioning](http://semver.org/)!
 
 ## [Unreleased]
+
+## 0.5.0 – 2018-02-27
 ### Added
 - Add support for ReStructuredText, LaTeX and plain text (`.txt`) documents, see
   [GH-6][] and [GH-7][].
