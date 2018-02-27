@@ -61,7 +61,8 @@
         "format:verify": "tsfmt --baseDir . --verify",
         "compile": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "node ./node_modules/vscode/bin/test"
+        "test": "node ./node_modules/vscode/bin/test",
+        "publish": "vsce publish"
     },
     "devDependencies": {
         "@types/node": "^9.0",
@@ -71,6 +72,7 @@
         "tslint-language-service": "^0.9.6",
         "typescript": "^2.7",
         "typescript-formatter": "^7.0.0",
+        "vsce": "^1.37.1",
         "vscode": "^1.1.5"
     },
     "dependencies": {
