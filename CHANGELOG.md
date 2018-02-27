@@ -8,17 +8,22 @@ Versioning](http://semver.org/)!
 ## [Unreleased]
 ### Added
 - Add support for ReStructuredText, LaTeX and plain text (`.txt`) documents, see
-  <https://github.com/lunaryorn/vscode-vale/issues/6> and
-  <https://github.com/lunaryorn/vscode-vale/pull/7≥.
+  [GH-6][] and [GH-7][].
+
+[GH-6]: https://github.com/lunaryorn/vscode-vale/issues/6
+[GH-7]: https://github.com/lunaryorn/vscode-vale/pull/7
 
 ## 0.4.0 – 2017-12-09
 ### Added
-- Support multi-root workspaces, see
-  <https://github.com/lunaryorn/vscode-vale/issues/4>
+- Support multi-root workspaces, see [GH-4][].
+
+[GH-4]: https://github.com/lunaryorn/vscode-vale/issues/4
 
 ### Changed
 - Increase buffer size for `vale` processes to handle large results, see
-  <https://github.com/lunaryorn/vscode-vale/issues/3>
+  [GH-3][].
+
+[GH-3]: https://github.com/lunaryorn/vscode-vale/issues/3
 
 ### Changed
 - Require vscode 1.15 or newer
@@ -30,16 +35,22 @@ Versioning](http://semver.org/)!
 ## 0.3.0 – 2017-06-13
 ### Added
 - Show status bar message while linting the entire workspace with vale, see
-  <https://github.com/lunaryorn/vscode-vale/issues/2>.
+  [GH-2].
+
+[GH-2]: https://github.com/lunaryorn/vscode-vale/issues/2
 
 ## 0.2.0 – 2017-06-12
 ### Added
 - Add `Vale: Lint workspace` command to run vale on all files in the current
-  workspace, see <https://github.com/lunaryorn/vscode-vale/issues/1>.
+  workspace, see [GH-1][].
+
+[GH-1]: https://github.com/lunaryorn/vscode-vale/issues/1.
 
 ### Changed
 - Require Vale version 0.7.2 or newer.  Older vale releases do not lint all
-  files given as arguments, see <https://github.com/ValeLint/vale/issues/46>.
+  files given as arguments, see [vale GH-46][].
+
+[vale GH-46]: https://github.com/ValeLint/vale/issues/46
 
 ## 0.1.2 – 2017-06-08
 ### Changed
