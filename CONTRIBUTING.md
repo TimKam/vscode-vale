@@ -13,8 +13,8 @@ requests, and any kind of contribution 🙂
 4. Run `yarn run vsce list-publishers` if you are unsure whether a publisher is
    set up.  If there is none see below before continuing.
 5. Run `yarn publish`.
-6. Bump `package.json` to a pre-release version, `git commit` and then push all
-  changes.
+6. Bump `package.json` to a pre-release version `x.y.z-dev`, `git commit` and
+   then push all changes.
 
 If you have no publisher setup:
 
@@ -25,5 +25,6 @@ If you have no publisher setup:
 
 [1]: https://code.visualstudio.com/docs/extensions/publish-extension#_get-a-personal-access-token
 
-Yes, I should automate this process! 😊
+Yes, I should automate this process! 😊  Also consider `yarn version` to update
+the version.
 
