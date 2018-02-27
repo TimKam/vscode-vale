@@ -46,7 +46,6 @@ import {
  */
 const isElligibleDocument = (document: TextDocument): boolean =>
     !document.isDirty && 0 < languages.match({
-        language: "markdown",
         scheme: "file",
     }, document);
 
@@ -265,7 +264,7 @@ const runValeOnWorkspace = async (): Promise<ValeDiagnostics> => {
     // Explicitly find all elligible files ourselves so that we respect
     // "files.exclude", ie, only look at files that are included in the
     // workspace.
-    const extensions: ReadonlyArray<string> = ["md", "markdown"];
+    const extensions: ReadonlyArray<string> = ["md", "markdown", "txt", "rst", "tex"];
     const pattern = `**/*.{${extensions.join(",")}}`;
     const uris = await workspace.findFiles(pattern);
     const results: ValeDiagnostics = new Map();
