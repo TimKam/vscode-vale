@@ -114,7 +114,7 @@ type ValeDiagnostics = Map<string, ReadonlyArray<Diagnostic>>;
 const toSeverity = (severity: ValeSeverity): DiagnosticSeverity => {
     switch (severity) {
         case "suggestion":
-            return DiagnosticSeverity.Hint;
+            return DiagnosticSeverity.Information;
         case "warning":
             return DiagnosticSeverity.Warning;
         case "error":
