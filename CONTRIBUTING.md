@@ -12,7 +12,7 @@ requests, and any kind of contribution 🙂
 3. `git commit` changes and `git tag` the commit (`git tag -m 'vscode-value x.y.z' x.y.z`)
 4. Run `yarn run vsce list-publishers` if you are unsure whether a publisher is
    set up.  If there is none see below before continuing.
-5. Run `yarn publish`.
+5. Run `yarn run publish`.
 6. Bump `package.json` to a pre-release version `x.y.z-dev`, `git commit` and
    then push all changes.
 
