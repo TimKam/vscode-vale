@@ -6,6 +6,8 @@ to structure this file.  This project adheres to [Semantic
 Versioning](http://semver.org/)!
 
 ## [Unreleased]
+
+## 0.6.0 – 2018-08-14
 ### Changed
 - Make vale suggestions appear in problems view, see [GH-10][].
 
