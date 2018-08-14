@@ -6,6 +6,10 @@ to structure this file.  This project adheres to [Semantic
 Versioning](http://semver.org/)!
 
 ## [Unreleased]
+### Changed
+- Make vale suggestions appear in problems view, see [GH-10][].
+
+[GH-10]: https://github.com/lunaryorn/vscode-vale/pull/10
 
 ## 0.5.0 – 2018-02-27
 ### Added
