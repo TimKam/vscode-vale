@@ -4,7 +4,7 @@
 
 Lint documents with [Vale][] in [Visual Studio Code][code].
 
-[vale]: https://valelint.github.io/docs/
+[vale]: https://errata-ai.github.io/vale/
 [code]: https://code.visualstudio.com
 
 ## Prerequisites
