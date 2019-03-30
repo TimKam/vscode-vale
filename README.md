@@ -1,5 +1,7 @@
 # VSCode vale
 
+**UNMAINTAINED**
+
 [![Build Status](https://travis-ci.org/lunaryorn/vscode-vale.svg?branch=master)](https://travis-ci.org/lunaryorn/vscode-vale)
 
 Lint documents with [Vale][] in [Visual Studio Code][code].
