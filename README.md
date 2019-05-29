@@ -2,6 +2,9 @@
 
 **UNMAINTAINED**
 
+Refer to [testthedocs/vscode-value](https://github.com/testthedocs/vscode-vale)
+for a maintained fork.
+
 [![Build Status](https://travis-ci.org/lunaryorn/vscode-vale.svg?branch=master)](https://travis-ci.org/lunaryorn/vscode-vale)
 
 Lint documents with [Vale][] in [Visual Studio Code][code].
