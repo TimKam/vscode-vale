@@ -2,21 +2,21 @@
     "name": "vale",
     "displayName": "vale",
     "description": "Lint documents with Vale",
-    "version": "0.7.0-dev",
+    "version": "0.8.0",
     "homepage": "https://marketplace.visualstudio.com/items?itemName=lunaryorn.vale",
-    "bugs": "https://github.com/lunaryorn/vscode-vale/issues",
+    "bugs": "https://github.com/testthedocs/vscode-vale/issues",
     "icon": "vale.png",
     "author": {
-        "name": "Sebastian Wiesner",
-        "email": "sebastian@swsnr.de",
-        "url": "https://swsnr.de"
+        "name": "Test the Docs",
+        "email": "chris@gregariousmammal.com",
+        "url": "https://testthedocs.org"
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/lunaryorn/vscode-vale.git"
+        "url": "https://github.com/testthedocs/vscode-vale.git"
     },
     "license": "MIT",
-    "publisher": "lunaryorn",
+    "publisher": "testthedocs",
     "engines": {
         "vscode": "^1.15.0"
     },
@@ -35,8 +35,8 @@
     ],
     "badges": [
         {
-            "url": "https://travis-ci.org/lunaryorn/vscode-vale.svg?branch=master",
-            "href": "https://travis-ci.org/lunaryorn/vscode-vale",
+            "url": "https://travis-ci.org/testthedocs/vscode-vale.svg?branch=master",
+            "href": "https://travis-ci.org/testthedocs/vscode-vale",
             "description": "Build Status"
         }
     ],
