@@ -350,7 +350,7 @@ const VERSION_REQUIREMENTS = ">= 0.7.2";
  */
 export const activate = async (context: ExtensionContext): Promise<any> => {
     const version = await getValeVersion();
-    if (semver.satisfies(version, VERSION_REQUIREMENTS)) {
+    if (semver.satisfies(version, VERSION_REQUIREMENTS) || version === 'master') {
         console.log("Found vale version", version,
             "satisfying", VERSION_REQUIREMENTS);
     } else {
