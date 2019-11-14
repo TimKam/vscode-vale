@@ -8,6 +8,8 @@ Versioning](http://semver.org/)!
 
 ## [Unreleased]
 
+## 0.8.4
+
 -   Asciidoc support
 
 ## 0.8.3

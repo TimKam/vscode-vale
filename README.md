@@ -2,7 +2,7 @@
 
 Thanks to all the work previous work from [lunaryorn](https://github.com/testthedocs/vscode-vale/commits?author=lunaryorn), this is a new maintained fork, with more features to come soon.
 
-Lint documents with [Vale][] in [Visual Studio Code][code].
+Lint documents with [Vale][vale] in [Visual Studio Code][code].
 
 [vale]: https://errata-ai.github.io/vale/
 
@@ -14,7 +14,7 @@ Lint documents with [Vale][] in [Visual Studio Code][code].
 
 If your setup does not let you to add `vale` to `$PATH`, please [open an issue][issue].
 
-If vale is too old the extension fails to activate.  In this case please update Vale; the error message will tell you the required version.
+If vale is too old the extension fails to activate.  In this case please update Vale; the error message tells you the required version.
 
 [1]: https://errata-ai.github.io/vale/#installation
 
@@ -26,10 +26,18 @@ Vale automatically checks a document when you open or save it.  Use the `Vale: L
 
 Vale always runs from the workspace directory in either case, so if you put a [Vale configuration][config] in the workspace directory it will automatically pick it up.
 
-Currently this extension only supports **Markdown, reStructuredText, LaTeX and plain text (.txt) documents**; please [open an issue][issue] or a pull request if you need support for **more document formats**, provided that [Vale][] supports them.
+This extension supports:
+
+-   **Asciidoc**: _.adoc_ and _.asciidoc_
+-   **Markdown**: _.md_ and _.markdown_
+-   **reStructuredText**: _.rst_
+-   **LaTeX**: _.tex_
+-   **plain text**: _.txt_
+
+[Open an issue][issue] or a pull request if you need support for **more document formats**, provided that [Vale][] supports them.
 
 [config]: https://errata-ai.github.io/vale/config/
 
 ## Configuration
 
-- `vscode-vale.path`: Specifies the path to the `vale` executable, useful if you don't want to use the global binary. The path should be relative to the workspace root folder.
+-   `vscode-vale.path`: Specifies the path to the `vale` executable, useful if you don't want to use the global binary. The path should be relative to the workspace root folder.

@@ -3,7 +3,7 @@
     "displayName": "vale",
     "description": "Lint documents with Vale",
     "extensionKind": "workspace",
-    "version": "0.8.3",
+    "version": "0.8.4",
     "homepage": "https://marketplace.visualstudio.com/items?itemName=testthedocs.vale",
     "bugs": "https://github.com/testthedocs/vscode-vale/issues",
     "icon": "vale.png",
