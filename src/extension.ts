@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+import * as path from 'path'
 import { execFile } from "child_process";
 import * as semver from "semver";
 import {
@@ -142,6 +143,12 @@ const toDiagnostic = (error: IValeErrorJSON): Diagnostic => {
     return diagnostic;
 };
 
+const readBinaryLocation = () => {
+    const configuration = workspace.getConfiguration();
+    const binaryPathRelativeToWorkspace =  configuration.get<string>('vscode-vale.path', 'vale');
+    return path.join(workspace.rootPath || '', binaryPathRelativeToWorkspace);
+}
+
 /**
  * Lint a path, which is either a file or a directory.
  *
@@ -152,8 +159,9 @@ const runVale = (
     folder: WorkspaceFolder | undefined,
     args: string | ReadonlyArray<string>,
 ): Promise<ValeDiagnostics> => {
+    const binaryLocation = readBinaryLocation()
     const command: ReadonlyArray<string> = [
-        "vale",
+        binaryLocation,
         "--no-exit",
         "--output",
         "JSON",
@@ -312,10 +320,11 @@ const registerCommands =
  * @return A promise with the vale version string as single element.  If vale
  * doesn't exist or if the version wasn't found the promise is rejected.
  */
-const getValeVersion = (): Promise<string> =>
+const getValeVersion = (): Promise<string> => {
+    const binaryLocation = readBinaryLocation()
     // Run in an arbitrary directory, since "--version" doesn't depend on any
     // folder
-    runInWorkspace(undefined, ["vale", "--version"])
+    return runInWorkspace(undefined, [binaryLocation, "--version"])
         .then((stdout) => {
             const matches = stdout.match(/^vale version (.+)$/m);
             if (matches && matches.length === 2) {
@@ -325,6 +334,7 @@ const getValeVersion = (): Promise<string> =>
                     `Failed to extract vale version from: ${stdout}`);
             }
         });
+}
 
 /**
  * The version requirements for vale.

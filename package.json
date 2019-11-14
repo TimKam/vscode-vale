@@ -78,5 +78,20 @@
     },
     "dependencies": {
         "semver": "^5.3.0"
+    },
+    "configuration": {
+        "type": "object",
+        "title": "VSCode vale",
+        "properties": {
+            "vscode-vale.path": {
+                "type": [
+                    "string",
+                    "null"
+                ],
+                "default": null,
+                "description": "Specifies the path to the vale executable, useful if you don't want to use the global binary.",
+                "scope": "machine"
+            }
+        }
     }
 }
