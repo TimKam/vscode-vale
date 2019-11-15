@@ -40,4 +40,11 @@ This extension supports:
 
 ## Configuration
 
--   `vscode-vale.path`: Specifies the path to the `vale` executable, useful if you don't want to use the global binary. The path should be relative to the workspace root folder.
+- `vscode-vale.path`: Specifies the path to the `vale` executable, useful if you don't want to use the global binary. The path should be relative to the workspace root folder.
+
+  **Example**
+  ```json
+  {
+    "vscode-vale.path": "node_modules/.bin/vale"
+  }
+  ```
