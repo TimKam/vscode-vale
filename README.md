@@ -10,11 +10,11 @@ Lint documents with [Vale][vale] in [Visual Studio Code][code].
 
 ## Prerequisites
 
-[Install vale][1] **0.7.2 or newer** and make sure that the `vale` executable is in `$PATH`.
-
-If your setup does not let you to add `vale` to `$PATH`, please [open an issue][issue].
+[Install vale][1] **0.7.2 or newer**.
 
 If vale is too old the extension fails to activate.  In this case please update Vale; the error message tells you the required version.
+
+> By default the extension will use the global installed binary `vale`. In case you have the binary installed on a local project you can configure the extension to use the local path. See [configuration options](#configuration) below.
 
 [1]: https://errata-ai.github.io/vale/#installation
 
