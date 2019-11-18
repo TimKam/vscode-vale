@@ -37,14 +37,3 @@ This extension supports:
 [Open an issue][issue] or a pull request if you need support for **more document formats**, provided that [Vale][] supports them.
 
 [config]: https://errata-ai.github.io/vale/config/
-
-## Configuration
-
-- `vscode-vale.path`: Specifies the path to the `vale` executable, useful if you don't want to use the global binary. The path should be relative to the workspace root folder.
-
-  **Example**
-  ```json
-  {
-    "vscode-vale.path": "node_modules/.bin/vale"
-  }
-  ```
