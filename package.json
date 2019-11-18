@@ -3,7 +3,7 @@
     "displayName": "vale",
     "description": "Lint documents with Vale",
     "extensionKind": "workspace",
-    "version": "0.8.4",
+    "version": "0.8.6",
     "homepage": "https://marketplace.visualstudio.com/items?itemName=testthedocs.vale",
     "bugs": "https://github.com/testthedocs/vscode-vale/issues",
     "icon": "vale.png",
@@ -78,20 +78,5 @@
     },
     "dependencies": {
         "semver": "^5.3.0"
-    },
-    "configuration": {
-        "type": "object",
-        "title": "VSCode vale",
-        "properties": {
-            "vscode-vale.path": {
-                "type": [
-                    "string",
-                    "null"
-                ],
-                "default": null,
-                "description": "Specifies the path to the vale executable, useful if you don't want to use the global binary.",
-                "scope": "machine"
-            }
-        }
     }
 }
