@@ -8,6 +8,10 @@ Versioning](http://semver.org/)!
 
 ## [Unreleased]
 
+## 0.8.7
+
+-   Added ability to add path to Vale
+
 ## 0.8.4
 
 -   Asciidoc support
