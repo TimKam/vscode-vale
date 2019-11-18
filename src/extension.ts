@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 import { execFile } from "child_process";
+import * as path from "path";
 import * as semver from "semver";
 import {
     commands,
@@ -35,6 +36,7 @@ import {
     workspace,
     WorkspaceFolder,
 } from "vscode";
+import * as which from "which";
 
 /**
  * Whether a given document is elligible for linting.
@@ -45,9 +47,7 @@ import {
  * @return Whether the document is elligible
  */
 const isElligibleDocument = (document: TextDocument): boolean =>
-    !document.isDirty && 0 < languages.match({
-        scheme: "file",
-    }, document);
+    !document.isDirty && 0 < languages.match({ scheme: "file" }, document);
 
 /**
  * Run a command in a given workspace folder and get its standard output.
@@ -60,12 +60,16 @@ const isElligibleDocument = (document: TextDocument): boolean =>
  * @return The standard output of the program
  */
 const runInWorkspace = (
-    folder: WorkspaceFolder | undefined, command: ReadonlyArray<string>,
+    folder: WorkspaceFolder | undefined,
+    command: ReadonlyArray<string>,
 ): Promise<string> =>
     new Promise((resolve, reject) => {
         const cwd = folder ? folder.uri.fsPath : process.cwd();
         const maxBuffer = 10 * 1024 * 1024; // 10MB buffer for large results
-        execFile(command[0], command.slice(1), { cwd, maxBuffer },
+        execFile(
+            command[0],
+            command.slice(1),
+            { cwd, maxBuffer },
             (error, stdout) => {
                 if (error) {
                     // Throw system errors, but do not fail if the command
@@ -75,7 +79,8 @@ const runInWorkspace = (
                 } else {
                     resolve(stdout);
                 }
-            });
+            },
+        );
     });
 
 /**
@@ -130,16 +135,89 @@ const toSeverity = (severity: ValeSeverity): DiagnosticSeverity => {
 const toDiagnostic = (error: IValeErrorJSON): Diagnostic => {
     // vale prints one-based locations but code wants zero-based, so adjust
     // accordingly
-    const range = new Range(error.Line - 1, error.Span[0] - 1,
-        error.Line - 1, error.Span[1]);
-    const message = error.Link ?
-        `${error.Message} (${error.Check}, see ${error.Link})` :
-        `${error.Message} (${error.Check})`;
+    const range = new Range(
+        error.Line - 1,
+        error.Span[0] - 1,
+        error.Line - 1,
+        error.Span[1],
+    );
+    const message = error.Link
+        ? `${error.Message} (${error.Check}, see ${error.Link})`
+        : `${error.Message} (${error.Check})`;
     const diagnostic = new Diagnostic(
-        range, message, toSeverity(error.Severity));
+        range,
+        message,
+        toSeverity(error.Severity),
+    );
     diagnostic.source = "vale";
     diagnostic.code = error.Check;
     return diagnostic;
+};
+
+/**
+ * Get the version of vale.
+ *
+ * @return A promise with the vale version string as single element.  If vale
+ * doesn't exist or if the version wasn't found the promise is rejected.
+ */
+const getValeVersion = async (
+    workspaceFolder?: WorkspaceFolder,
+): Promise<string> => {
+    const binaryLocation = readBinaryLocation(workspaceFolder);
+    // Run in an arbitrary directory, since "--version" doesn't depend on any
+    // folder
+    const stdout = await runInWorkspace(undefined, [
+        binaryLocation,
+        "--version",
+    ]);
+    const matches = stdout.match(/^vale version (.+)$/m);
+    if (matches && matches.length === 2) {
+        return matches[1];
+    }
+    throw new Error(`Failed to extract vale version from: ${stdout}`);
+};
+
+/**
+ * The version requirements for vale.
+ *
+ * We need at least 0.7.2 in this extension because earlier releases do not
+ * process all command line arguments, which we need to lint the entire
+ * workspace.
+ *
+ * See https://github.com/ValeLint/vale/issues/46 for details.
+ */
+const VERSION_REQUIREMENTS = ">= 0.7.2";
+
+const checkValeVersionSatisfies = async (workspaceFolder?: WorkspaceFolder) => {
+    const version = await getValeVersion(workspaceFolder);
+    if (
+        semver.satisfies(version, VERSION_REQUIREMENTS) ||
+        version === "master"
+    ) {
+        console.log(
+            `Found vale version ${version} satisfying ${VERSION_REQUIREMENTS}.`,
+        );
+    } else {
+        // tslint:disable-next-line:max-line-length
+        throw new Error(
+            `Vale version ${version} does not satisfy ${VERSION_REQUIREMENTS}`,
+        );
+    }
+};
+
+const readBinaryLocation = (workspaceFolder?: WorkspaceFolder) => {
+    const configuration = workspace.getConfiguration();
+    const customBinaryPath = configuration.get<string>("vscode-vale.path");
+    if (customBinaryPath && workspaceFolder) {
+        return path.normalize(
+            customBinaryPath.replace(
+                "${workspaceFolder}",
+                workspaceFolder.uri.fsPath,
+            ),
+        );
+    }
+    // Assume that the binary is installed globally
+    return which.sync("vale", { pathExt: ".cmd" });
 };
 
 /**
@@ -148,26 +226,26 @@ const toDiagnostic = (error: IValeErrorJSON): Diagnostic => {
  * @param path The path to lint
  * @return A promise with the results of linting the path
  */
-const runVale = (
+const runVale = async (
     folder: WorkspaceFolder | undefined,
     args: string | ReadonlyArray<string>,
 ): Promise<ValeDiagnostics> => {
+    const binaryLocation = readBinaryLocation(folder);
     const command: ReadonlyArray<string> = [
-        "vale",
+        binaryLocation,
         "--no-exit",
         "--output",
         "JSON",
         ...(typeof args === "string" ? [args] : args),
     ];
     console.info("Run vale as", command);
-    return runInWorkspace(folder, command).then((stdout) => {
-        const result = JSON.parse(stdout) as IValeJSON;
-        const diagnostics: ValeDiagnostics = new Map();
-        for (const fileName of Object.getOwnPropertyNames(result)) {
-            diagnostics.set(fileName, result[fileName].map(toDiagnostic));
-        }
-        return diagnostics;
-    });
+    const stdout = await runInWorkspace(folder, command);
+    const result = JSON.parse(stdout) as IValeJSON;
+    const diagnostics: ValeDiagnostics = new Map();
+    for (const fileName of Object.getOwnPropertyNames(result)) {
+        diagnostics.set(fileName, result[fileName].map(toDiagnostic));
+    }
+    return diagnostics;
 };
 
 /**
@@ -176,47 +254,62 @@ const runVale = (
  * @param diagnostics The diagnostic collection to put results in
  * @param document The document to lint
  */
-const lintDocumentToDiagnostics = (diagnostics: DiagnosticCollection) =>
-    (document: TextDocument) => {
-        console.log("Linting", document.fileName);
-        if (!isElligibleDocument(document)) {
-            return Promise.resolve();
-        }
-        const folder = workspace.getWorkspaceFolder(document.uri);
-        return runVale(folder, document.fileName)
-            .catch((error): ValeDiagnostics => {
-                window.showErrorMessage(error.toString());
-                diagnostics.delete(document.uri);
-                return new Map();
-            })
-            .then((result) => {
-                // Delete old diagnostics for the document, in case we
-                // don't receive new diagnostics, because the document
-                // has no errors.
-                diagnostics.delete(document.uri);
-                result.forEach((fileDiagnostics, fileName) =>
-                    diagnostics.set(Uri.file(fileName),
-                        // tslint:disable-next-line:readonly-array
-                        fileDiagnostics as Diagnostic[]));
-            });
-    };
+const lintDocumentToDiagnostics = (diagnostics: DiagnosticCollection) => async (
+    document: TextDocument,
+) => {
+    console.log("Linting", document.fileName);
+    if (!isElligibleDocument(document)) {
+        return;
+    }
+    const folder = workspace.getWorkspaceFolder(document.uri);
+    await checkValeVersionSatisfies(folder);
+    try {
+        const result = await runVale(folder, document.fileName);
+        // Delete old diagnostics for the document, in case we
+        // don't receive new diagnostics, because the document
+        // has no errors.
+        diagnostics.delete(document.uri);
+        result.forEach((fileDiagnostics, fileName) =>
+            diagnostics.set(
+                Uri.file(fileName),
+                // tslint:disable-next-line:readonly-array
+                fileDiagnostics as Diagnostic[],
+            ),
+        );
+    } catch (error) {
+        window.showErrorMessage(error.toString());
+        diagnostics.delete(document.uri);
+        return new Map();
+    }
+};
 
 /**
  * Start linting vale documents.
  *
  * @param context The extension context
  */
-const startLinting =
-    (context: ExtensionContext, diagnostics: DiagnosticCollection): void => {
-        workspace.onDidSaveTextDocument(lintDocumentToDiagnostics(diagnostics),
-            null, context.subscriptions);
-        workspace.onDidOpenTextDocument(lintDocumentToDiagnostics(diagnostics),
-            null, context.subscriptions);
-        workspace.textDocuments.forEach(lintDocumentToDiagnostics(diagnostics));
+const startLinting = (
+    context: ExtensionContext,
+    diagnostics: DiagnosticCollection,
+): void => {
+    workspace.onDidSaveTextDocument(
+        lintDocumentToDiagnostics(diagnostics),
+        null,
+        context.subscriptions,
+    );
+    workspace.onDidOpenTextDocument(
+        lintDocumentToDiagnostics(diagnostics),
+        null,
+        context.subscriptions,
+    );
+    workspace.textDocuments.forEach(lintDocumentToDiagnostics(diagnostics));
 
-        workspace.onDidCloseTextDocument(
-            (d) => diagnostics.delete(d.uri), null, context.subscriptions);
-    };
+    workspace.onDidCloseTextDocument(
+        (d) => diagnostics.delete(d.uri),
+        null,
+        context.subscriptions,
+    );
+};
 
 /**
  * A workspace folder with URIs.
@@ -264,15 +357,25 @@ const runValeOnWorkspace = async (): Promise<ValeDiagnostics> => {
     // Explicitly find all elligible files ourselves so that we respect
     // "files.exclude", ie, only look at files that are included in the
     // workspace.
-    const extensions: ReadonlyArray<string> = ["md", "markdown", "txt", "rst", "tex", "adoc", "asciidoc"];
+    const extensions: ReadonlyArray<string> = [
+        "md",
+        "markdown",
+        "txt",
+        "rst",
+        "tex",
+        "adoc",
+        "asciidoc",
+    ];
     const pattern = `**/*.{${extensions.join(",")}}`;
     const uris = await workspace.findFiles(pattern);
     const results: ValeDiagnostics = new Map();
     for (const urisInFolder of groupByWorkspace(uris)) {
         const folderResults = await runVale(
-            urisInFolder.folder, urisInFolder.filePaths);
-        for (const [path, errors] of folderResults) {
-            results.set(path, errors);
+            urisInFolder.folder,
+            urisInFolder.filePaths,
+        );
+        for (const [filePath, errors] of folderResults) {
+            results.set(filePath, errors);
         }
     }
     return results;
@@ -284,58 +387,32 @@ const runValeOnWorkspace = async (): Promise<ValeDiagnostics> => {
  * @param context The extension context
  * @param diagnostics The diagnostic collection to put diagnostics in
  */
-const registerCommands =
-    (context: ExtensionContext, diagnostics: DiagnosticCollection): void => {
-        const lintProgressOptions = {
-            location: ProgressLocation.Window,
-            title: "vale running on workspace",
-        };
-        const lintWorkspaceCommand = commands.registerCommand(
-            "vale.lintWorkspace",
-            () => window.withProgress(
-                lintProgressOptions,
-                () => runValeOnWorkspace()
-                    .then((result) => {
-                        diagnostics.clear();
-                        result.forEach((errors, fileName) =>
-                            diagnostics.set(Uri.file(fileName),
-                                // tslint:disable-next-line:readonly-array
-                                errors as Diagnostic[]));
-                    })));
-
-        context.subscriptions.push(lintWorkspaceCommand);
+const registerCommands = (
+    context: ExtensionContext,
+    diagnostics: DiagnosticCollection,
+): void => {
+    const lintProgressOptions = {
+        location: ProgressLocation.Window,
+        title: "vale running on workspace",
     };
+    const lintWorkspaceCommand = commands.registerCommand(
+        "vale.lintWorkspace",
+        () =>
+            window.withProgress(lintProgressOptions, async () => {
+                const result = await runValeOnWorkspace();
+                diagnostics.clear();
+                result.forEach((errors, fileName) =>
+                    diagnostics.set(
+                        Uri.file(fileName),
+                        // tslint:disable-next-line:readonly-array
+                        errors as Diagnostic[],
+                    ),
+                );
+            }),
+    );
 
-/**
- * Get the version of vale.
- *
- * @return A promise with the vale version string as single element.  If vale
- * doesn't exist or if the version wasn't found the promise is rejected.
- */
-const getValeVersion = (): Promise<string> =>
-    // Run in an arbitrary directory, since "--version" doesn't depend on any
-    // folder
-    runInWorkspace(undefined, ["vale", "--version"])
-        .then((stdout) => {
-            const matches = stdout.match(/^vale version (.+)$/m);
-            if (matches && matches.length === 2) {
-                return matches[1];
-            } else {
-                throw new Error(
-                    `Failed to extract vale version from: ${stdout}`);
-            }
-        });
-
-/**
- * The version requirements for vale.
- *
- * We need at least 0.7.2 in this extension because earlier releases do not
- * process all command line arguments, which we need to lint the entire
- * workspace.
- *
- * See https://github.com/ValeLint/vale/issues/46 for details.
- */
-const VERSION_REQUIREMENTS = ">= 0.7.2";
+    context.subscriptions.push(lintWorkspaceCommand);
+};
 
 /**
  * Activate this extension.
@@ -349,14 +426,6 @@ const VERSION_REQUIREMENTS = ">= 0.7.2";
  * @return A promise for the initialization
  */
 export const activate = async (context: ExtensionContext): Promise<any> => {
-    const version = await getValeVersion();
-    if (semver.satisfies(version, VERSION_REQUIREMENTS) || version === 'master') {
-        console.log("Found vale version", version,
-            "satisfying", VERSION_REQUIREMENTS);
-    } else {
-        // tslint:disable-next-line:max-line-length
-        throw new Error(`Vale version ${version} does not satisfy ${VERSION_REQUIREMENTS}`);
-    }
     // Create and register a collection for our diagnostics
     const diagnostics = languages.createDiagnosticCollection("vale");
     context.subscriptions.push(diagnostics);
