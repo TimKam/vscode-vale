@@ -53,13 +53,13 @@
         },
         "configuration": {
             "type": "object",
-            "title": "VSCode vale",
+            "title": "Vale",
             "properties": {
                 "vscode-vale.path": {
                     "scope": "resource",
                     "type": "string",
                     "default": "vale",
-                    "description": "Absolute path to vale binary. Special var ${workspaceFolder} can be used in path (NOTE: in windows you can use '/' and can omit '.cmd' in path)"
+                    "description": "Absolute path to Vale binary. Special var ${workspaceFolder} can be used in path (NOTE: in windows you can use '/' and can omit '.cmd' in path)"
                 }
             }
         }
