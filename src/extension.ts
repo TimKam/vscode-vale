@@ -357,15 +357,11 @@ const runValeOnWorkspace = async (): Promise<ValeDiagnostics> => {
     // Explicitly find all elligible files ourselves so that we respect
     // "files.exclude", ie, only look at files that are included in the
     // workspace.
-    const extensions: ReadonlyArray<string> = [
-        "md",
-        "markdown",
-        "txt",
-        "rst",
-        "tex",
-        "adoc",
-        "asciidoc",
-    ];
+
+    const extensions = workspace
+      .getConfiguration("vscode-vale")
+      .get<ReadonlyArray<string>>("fileExtensions")!;
+
     const pattern = `**/*.{${extensions.join(",")}}`;
     const uris = await workspace.findFiles(pattern);
     const results: ValeDiagnostics = new Map();
