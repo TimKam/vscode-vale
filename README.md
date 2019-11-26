@@ -26,7 +26,7 @@ Vale automatically checks a document when you open or save it.  Use the `Vale: L
 
 Vale always runs from the workspace directory in either case, so if you put a [Vale configuration][config] in the workspace directory it will automatically pick it up.
 
-This extension supports:
+This extension supports the following file extensions by default, but you can change them with the `vscode-vale.fileExtensions` config item (see below):
 
 -   **Asciidoc**: _.adoc_ and _.asciidoc_
 -   **Markdown**: _.md_ and _.markdown_
@@ -34,21 +34,22 @@ This extension supports:
 -   **LaTeX**: _.tex_
 -   **plain text**: _.txt_
 
-[Open an issue][issue] or a pull request if you need support for **more document formats**, provided that [Vale][] supports them.
-
 [config]: https://errata-ai.github.io/vale/config/
 
 ## Configuration
 
-- `vscode-vale.path`: (default `vale`). Absolute path to the `vale` binary, useful if you don't want to use the global binary.
+-   `vscode-vale.path`: (default `vale`). Absolute path to the `vale` binary, useful if you don't want to use the global binary.
 
-  **Example**
-  ```js
-  {
-    // You can use ${workspaceFolder} it will be replaced by workspace folder path
-    "vscode-vale.path": "${workspaceFolder}/node_modules/.bin/vale"
+**Example**
 
-    // or use some absolute path
-    "vscode-vale.path": "/some/path/to/vale"
-  }
-  ```
+```js
+{
+  // You can use ${workspaceFolder} it will be replaced by workspace folder path
+  "vscode-vale.path": "${workspaceFolder}/node_modules/.bin/vale"
+
+  // or use some absolute path
+  "vscode-vale.path": "/some/path/to/vale"
+}
+```
+
+-   `vscode-vale.fileExtensions`: (default `md, markdown, txt, rst, tex, adoc, asciidoc`). File extensions to lint. Note, these also need to be in your Vale config file.
