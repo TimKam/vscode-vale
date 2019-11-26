@@ -60,7 +60,24 @@
                     "type": "string",
                     "default": "vale",
                     "description": "Absolute path to Vale binary. Special var ${workspaceFolder} can be used in path (NOTE: in windows you can use '/' and can omit '.cmd' in path)"
-                }
+                },
+                "vscode-vale.fileExtensions": {
+                    "scope": "resource",
+                    "type": "array",
+                    "default": [
+                        "md",
+                        "markdown",
+                        "txt",
+                        "rst",
+                        "tex",
+                        "adoc",
+                        "asciidoc"
+                    ],
+                    "description": "File extensions to lint. Note, these also need to be in your Vale config file.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
             }
         }
     },
