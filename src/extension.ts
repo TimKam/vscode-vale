@@ -220,6 +220,20 @@ const readBinaryLocation = (workspaceFolder?: WorkspaceFolder) => {
     return which.sync("vale", { pathExt: ".cmd" });
 };
 
+const readFileLocation = (workspaceFolder?: WorkspaceFolder) => {
+    const configuration = workspace.getConfiguration();
+    const customConfigPath = configuration.get<string>("vscode-vale.configPath");
+    if (customConfigPath && workspaceFolder) {
+        return path.normalize(
+            customConfigPath.replace(
+                "${workspaceFolder}",
+                workspaceFolder.uri.fsPath,
+            ),
+        );
+    }
+    // Assume that the binary is installed globally
+    return customConfigPath;
+};
 /**
  * Lint a path, which is either a file or a directory.
  *
@@ -231,9 +245,13 @@ const runVale = async (
     args: string | ReadonlyArray<string>,
 ): Promise<ValeDiagnostics> => {
     const binaryLocation = readBinaryLocation(folder);
+    const configLocation = readFileLocation(folder)!;
+
     const command: ReadonlyArray<string> = [
         binaryLocation,
         "--no-exit",
+        "--config",
+        configLocation,
         "--output",
         "JSON",
         ...(typeof args === "string" ? [args] : args),
