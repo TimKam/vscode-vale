@@ -8,6 +8,11 @@ Versioning](http://semver.org/)!
 
 ## [Unreleased]
 
+## 0.9.1
+
+-   Update extension APIs
+-   Add ability to override config path
+
 ## 0.9
 
 -   Small UI improvements
