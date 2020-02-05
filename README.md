@@ -38,6 +38,7 @@ This extension supports the following file extensions by default, but you can ch
 
 ## Configuration
 
+-   `vscode-vale.configPath`: Absolute path to Vale config file. If not specified, uses normal Vale config scoping rules.
 -   `vscode-vale.path`: (default `vale`). Absolute path to the `vale` binary, useful if you don't want to use the global binary.
 
 **Example**
